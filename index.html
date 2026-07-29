@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>Bonnetjes</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Bonnetjes</h1>
+  <button id="btn-instellingen" class="icon-btn" aria-label="Instellingen">&#9881;</button>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab is-active" data-view="scannen" role="tab">Scannen</button>
+  <button class="tab" data-view="bonnen" role="tab">Bonnen <span id="badge-aantal" class="badge">0</span></button>
+  <button class="tab" data-view="export" role="tab">Export</button>
+</nav>
+
+<main>
+
+  <!-- ============ SCANNEN ============ -->
+  <section id="view-scannen" class="view is-active">
+    <div id="geen-sleutel" class="waarschuwing hidden">
+      Nog geen API-sleutel ingesteld. Open <button class="link" id="link-instellingen">Instellingen</button> om te beginnen.
+    </div>
+
+    <div class="knoppenrij">
+      <button id="btn-camera" class="knop knop-groot">Foto maken</button>
+      <button id="btn-kiezen" class="knop knop-groot knop-secundair">Foto's kiezen</button>
+    </div>
+    <input type="file" id="input-camera" accept="image/*" capture="environment" hidden>
+    <input type="file" id="input-kiezen" accept="image/*" multiple hidden>
+
+    <p class="hint">Fotografeer het bonnetje recht van boven, met de hele bon in beeld. Meerdere bonnen tegelijk kiezen kan ook.</p>
+
+    <div id="wachtrij" class="wachtrij"></div>
+  </section>
+
+  <!-- ============ BONNEN ============ -->
+  <section id="view-bonnen" class="view">
+    <div class="filterrij">
+      <input type="search" id="zoek" placeholder="Zoek op etablissement of plaats" autocomplete="off">
+      <label class="check"><input type="checkbox" id="filter-controleren"> Alleen te controleren</label>
+    </div>
+    <div id="bonnenlijst" class="bonnenlijst"></div>
+  </section>
+
+  <!-- ============ EXPORT ============ -->
+  <section id="view-export" class="view">
+    <div class="veld-rij">
+      <label class="veld">
+        <span>Vanaf</span>
+        <input type="date" id="export-van">
+      </label>
+      <label class="veld">
+        <span>Tot en met</span>
+        <input type="date" id="export-tot">
+      </label>
+    </div>
+    <p id="export-telling" class="hint"></p>
+
+    <button id="btn-xlsx" class="knop knop-groot">Excel-bestand (.xlsx)</button>
+    <button id="btn-csv" class="knop knop-secundair">CSV (puntkomma)</button>
+
+    <h3>Reservekopie</h3>
+    <p class="hint">Alle bonnen inclusief foto's als één bestand. Bewaar dit als back-up of om over te zetten naar een ander toestel.</p>
+    <button id="btn-backup" class="knop knop-secundair">Back-up maken (.json)</button>
+    <button id="btn-herstel" class="knop knop-secundair">Back-up terugzetten</button>
+    <input type="file" id="input-herstel" accept="application/json,.json" hidden>
+  </section>
+
+</main>
+
+<!-- ============ DETAIL / BEWERKEN ============ -->
+<dialog id="dlg-bon">
+  <form method="dialog" class="dlg-inhoud">
+    <div class="dlg-kop">
+      <strong id="dlg-titel">Bon bewerken</strong>
+      <button value="sluiten" class="icon-btn" aria-label="Sluiten">&times;</button>
+    </div>
+
+    <img id="dlg-foto" alt="Foto van het bonnetje" class="dlg-foto hidden">
+
+    <div id="dlg-waarschuwingen" class="waarschuwing hidden"></div>
+
+    <label class="veld"><span>Datum</span><input type="date" id="f-datum" required></label>
+    <label class="veld"><span>Etablissement</span><input type="text" id="f-etablissement" required></label>
+    <label class="veld"><span>Plaats</span><input type="text" id="f-plaats"></label>
+
+    <div class="veld-rij">
+      <label class="veld"><span>Totaal (incl. btw)</span><input type="number" id="f-totaal" step="0.01" inputmode="decimal" required></label>
+      <label class="veld"><span>Btw-bedrag</span><input type="number" id="f-btw" step="0.01" inputmode="decimal" required></label>
+    </div>
+
+    <fieldset class="btw-regels">
+      <legend>Btw-uitsplitsing</legend>
+      <div id="f-btw-regels"></div>
+      <button type="button" id="btn-btw-regel" class="knop knop-klein knop-secundair">Tarief toevoegen</button>
+    </fieldset>
+
+    <div class="veld-rij">
+      <label class="veld"><span>Categorie</span>
+        <select id="f-categorie">
+          <option value="etentje">Etentje</option>
+          <option value="lunch">Lunch</option>
+          <option value="drank">Drank</option>
+          <option value="hotel">Hotel</option>
+          <option value="taxi">Taxi / vervoer</option>
+          <option value="brandstof">Brandstof</option>
+          <option value="kantoor">Kantoor</option>
+          <option value="overig">Overig</option>
+        </select>
+      </label>
+      <label class="veld"><span>Betaalwijze</span><input type="text" id="f-betaalwijze"></label>
+    </div>
+
+    <label class="veld"><span>Notitie (bijv. gezelschap of aanleiding)</span><input type="text" id="f-notitie"></label>
+
+    <div class="dlg-acties">
+      <button type="button" id="btn-verwijder" class="knop knop-gevaar">Verwijderen</button>
+      <button type="button" id="btn-heranalyse" class="knop knop-secundair">Opnieuw analyseren</button>
+      <button type="button" id="btn-bewaar" class="knop">Bewaren</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ INSTELLINGEN ============ -->
+<dialog id="dlg-instellingen">
+  <form method="dialog" class="dlg-inhoud">
+    <div class="dlg-kop">
+      <strong>Instellingen</strong>
+      <button value="sluiten" class="icon-btn" aria-label="Sluiten">&times;</button>
+    </div>
+
+    <label class="veld">
+      <span>Anthropic API-sleutel</span>
+      <input type="password" id="i-sleutel" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    </label>
+    <p class="hint">
+      De sleutel blijft op dit toestel staan en gaat alleen naar api.anthropic.com.
+      Aanmaken kan op platform.claude.com onder Settings &rarr; API keys.
+    </p>
+
+    <label class="veld">
+      <span>Model</span>
+      <select id="i-model">
+        <option value="claude-opus-5">Claude Opus 5 (nauwkeurigst)</option>
+        <option value="claude-sonnet-5">Claude Sonnet 5 (goedkoper)</option>
+        <option value="claude-haiku-4-5">Claude Haiku 4.5 (goedkoopst)</option>
+      </select>
+    </label>
+
+    <label class="veld">
+      <span>Standaardcategorie</span>
+      <select id="i-categorie">
+        <option value="etentje">Etentje</option>
+        <option value="lunch">Lunch</option>
+        <option value="drank">Drank</option>
+        <option value="hotel">Hotel</option>
+        <option value="taxi">Taxi / vervoer</option>
+        <option value="brandstof">Brandstof</option>
+        <option value="kantoor">Kantoor</option>
+        <option value="overig">Overig</option>
+      </select>
+    </label>
+
+    <div class="dlg-acties">
+      <button type="button" id="btn-test" class="knop knop-secundair">Sleutel testen</button>
+      <button type="button" id="btn-instellingen-bewaar" class="knop">Bewaren</button>
+    </div>
+    <p id="test-uitslag" class="hint"></p>
+  </form>
+</dialog>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="xlsx.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
