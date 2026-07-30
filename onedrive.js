@@ -7,6 +7,9 @@
   const CLIENT_ID = "51c3008e-24d3-4557-a18b-15447cd98265";
   const AUTHORITY = "https://login.microsoftonline.com/common";
   const SCOPES = ["Files.ReadWrite", "User.Read"];
+  // Moet exact overeenkomen met de SPA-redirect-URI die in Azure is geregistreerd.
+  // Berekenen op basis van location kan variëren (met/zonder index.html), vandaar vast.
+  const REDIRECT_URI = "https://robertdulac.github.io/bonnetjes-scanner/";
 
   const SLEUTEL_PAD = "bonnetjes:onedrive-pad";
   const STANDAARD_PAD = "administratie/Bonnetjes.xlsx";
@@ -24,7 +27,7 @@
       auth: {
         clientId: CLIENT_ID,
         authority: AUTHORITY,
-        redirectUri: location.origin + location.pathname,
+        redirectUri: REDIRECT_URI,
       },
       cache: { cacheLocation: "localStorage" },
     });
