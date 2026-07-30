@@ -377,6 +377,7 @@
       sorteer();
       tekenBonnen();
       werkTellingBij();
+      plandOneDriveSync();
 
       taak.klaar = true;
       taak.titel = bon.etablissement || "Bonnetje";
@@ -596,6 +597,7 @@
     sorteer();
     tekenBonnen();
     werkTellingBij();
+    plandOneDriveSync();
     $("#dlg-bon").close();
     toonMelding(bon.controleren ? "Bewaard, maar er blijven aandachtspunten." : "Bewaard.");
   }
@@ -609,6 +611,7 @@
     bonnen = bonnen.filter(b => b.id !== bon.id);
     tekenBonnen();
     werkTellingBij();
+    plandOneDriveSync();
     $("#dlg-bon").close();
     toonMelding("Verwijderd.");
   }
@@ -782,7 +785,62 @@
     sorteer();
     tekenBonnen();
     werkTellingBij();
+    plandOneDriveSync();
     toonMelding(`${nieuwe.length} bonnen teruggezet.`);
+  }
+
+  // ==========================================================================
+  // OneDrive-synchronisatie
+  // ==========================================================================
+  let oneDriveSyncTimer = null;
+  const SLEUTEL_LAATSTE_SYNC = "bonnetjes:onedrive-laatst";
+
+  function plandOneDriveSync() {
+    if (!window.OneDrive || !OneDrive.beschikbaar() || !OneDrive.verbonden()) return;
+    clearTimeout(oneDriveSyncTimer);
+    oneDriveSyncTimer = setTimeout(voerOneDriveSyncUit, 3000);
+  }
+
+  async function voerOneDriveSyncUit() {
+    if (!window.OneDrive || !OneDrive.beschikbaar() || !OneDrive.verbonden()) return;
+    try {
+      const alles = bonnen.slice().sort((a, b) => (a.datum || "").localeCompare(b.datum || ""));
+      const { kop, rijen, breedtes } = bouwTabel(alles);
+      const blob = Xlsx.maakWerkboek(kop, rijen, { naam: "Bonnen", breedtes });
+      await OneDrive.schrijfBestand(blob);
+      localStorage.setItem(SLEUTEL_LAATSTE_SYNC, String(Date.now()));
+      bijwerkOneDriveStatus();
+    } catch (e) {
+      bijwerkOneDriveStatus(e.message === "HERNIEUW_INLOG"
+        ? "Opnieuw inloggen nodig — tik op Nu synchroniseren."
+        : (e.message || "Synchroniseren mislukt."));
+    }
+  }
+
+  function bijwerkOneDriveStatus(foutmelding) {
+    const status = $("#od-status");
+    const uitslag = $("#od-uitslag");
+    if (!status || !uitslag) return;
+
+    if (!window.OneDrive || !OneDrive.beschikbaar()) {
+      status.textContent = "OneDrive-koppeling is niet beschikbaar.";
+      $("#btn-od-verbinden").classList.add("hidden");
+      $("#btn-od-sync").classList.add("hidden");
+      uitslag.textContent = "";
+      return;
+    }
+
+    const isVerbonden = OneDrive.verbonden();
+    if (isVerbonden) {
+      const laatst = localStorage.getItem(SLEUTEL_LAATSTE_SYNC);
+      const wanneer = laatst ? new Date(Number(laatst)).toLocaleString("nl-NL") : "nog niet";
+      status.textContent = `Verbonden als ${OneDrive.account?.username || "onbekend account"}. Laatst gesynchroniseerd: ${wanneer}. Pad: ${OneDrive.pad()}`;
+    } else {
+      status.textContent = "Niet verbonden met OneDrive.";
+    }
+    $("#btn-od-verbinden").classList.toggle("hidden", isVerbonden);
+    $("#btn-od-sync").classList.toggle("hidden", !isVerbonden);
+    uitslag.textContent = foutmelding || "";
   }
 
   // ==========================================================================
@@ -792,6 +850,7 @@
     $("#i-sleutel").value = instellingen.sleutel;
     $("#i-model").value = instellingen.model;
     $("#i-categorie").value = instellingen.categorie;
+    $("#i-onedrive-pad").value = window.OneDrive ? OneDrive.pad() : "";
     $("#test-uitslag").textContent = "";
     $("#dlg-instellingen").showModal();
   }
@@ -803,6 +862,11 @@
       categorie: $("#i-categorie").value,
     };
     Instellingen.schrijf(instellingen);
+    if (window.OneDrive) {
+      OneDrive.zetPad($("#i-onedrive-pad").value);
+      bijwerkOneDriveStatus();
+      plandOneDriveSync();
+    }
     werkSleutelWaarschuwingBij();
     $("#dlg-instellingen").close();
     toonMelding("Instellingen bewaard.");
@@ -890,6 +954,17 @@
       e.target.value = "";
     });
 
+    $("#btn-od-verbinden").addEventListener("click", () => {
+      if (!window.OneDrive || !OneDrive.beschikbaar()) { toonMelding("OneDrive-koppeling is niet beschikbaar."); return; }
+      OneDrive.verbind();
+    });
+    $("#btn-od-sync").addEventListener("click", async () => {
+      const knop = $("#btn-od-sync");
+      knop.disabled = true;
+      await voerOneDriveSyncUit();
+      knop.disabled = false;
+    });
+
     $("#dlg-bon").addEventListener("close", () => {
       if (dialoogFotoUrl) { URL.revokeObjectURL(dialoogFotoUrl); dialoogFotoUrl = null; }
     });
@@ -907,6 +982,11 @@
     sorteer();
     tekenBonnen();
     werkTellingBij();
+
+    if (window.OneDrive) {
+      try { await OneDrive.init(); } catch (e) { /* koppeling niet beschikbaar */ }
+      bijwerkOneDriveStatus();
+    }
 
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("sw.js").catch(() => { /* offline-modus is optioneel */ });

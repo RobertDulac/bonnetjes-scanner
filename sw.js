@@ -1,12 +1,13 @@
 /* Service worker: houdt de app beschikbaar zonder netwerk.
    Alleen bestanden van deze site worden gecachet; API-verkeer nooit. */
-const CACHE = "bonnetjes-v1";
+const CACHE = "bonnetjes-v2";
 const BESTANDEN = [
   "./",
   "./index.html",
   "./app.css",
   "./app.js",
   "./xlsx.js",
+  "./onedrive.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

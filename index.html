@@ -69,6 +69,12 @@
     <button id="btn-xlsx" class="knop knop-groot">Excel-bestand (.xlsx)</button>
     <button id="btn-csv" class="knop knop-secundair">CSV (puntkomma)</button>
 
+    <h3>OneDrive</h3>
+    <p id="od-status" class="hint">Niet verbonden met OneDrive.</p>
+    <button id="btn-od-verbinden" class="knop knop-secundair">Verbinden met OneDrive</button>
+    <button id="btn-od-sync" class="knop knop-secundair hidden">Nu synchroniseren</button>
+    <p id="od-uitslag" class="hint"></p>
+
     <h3>Reservekopie</h3>
     <p class="hint">Alle bonnen inclusief foto's als één bestand. Bewaar dit als back-up of om over te zetten naar een ander toestel.</p>
     <button id="btn-backup" class="knop knop-secundair">Back-up maken (.json)</button>
@@ -171,6 +177,15 @@
       </select>
     </label>
 
+    <label class="veld">
+      <span>Pad in OneDrive voor het spreadsheet</span>
+      <input type="text" id="i-onedrive-pad" placeholder="administratie/Bonnetjes.xlsx" spellcheck="false">
+    </label>
+    <p class="hint">
+      De map moet al bestaan in je OneDrive. Het bestand wordt na elke scan of wijziging
+      automatisch volledig herschreven met alle bonnen tot nu toe.
+    </p>
+
     <div class="dlg-acties">
       <button type="button" id="btn-test" class="knop knop-secundair">Sleutel testen</button>
       <button type="button" id="btn-instellingen-bewaar" class="knop">Bewaren</button>
@@ -182,6 +197,8 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="xlsx.js"></script>
+<script src="https://unpkg.com/@azure/msal-browser@5.17.3/lib/msal-browser.min.js" crossorigin="anonymous"></script>
+<script src="onedrive.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
