@@ -84,6 +84,11 @@
     return (Number(n) || 0).toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function datumNL(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso || "");
+  }
+
   function toonMelding(tekst, duur) {
     const el = $("#toast");
     el.textContent = tekst;
@@ -382,8 +387,8 @@
       taak.klaar = true;
       taak.titel = bon.etablissement || "Bonnetje";
       taak.status = bon.controleren
-        ? `${bon.datum || "?"} · ${euro(bon.totaal)} · controleren`
-        : `${bon.datum || "?"} · ${euro(bon.totaal)} · opgeslagen`;
+        ? `${datumNL(bon.datum) || "?"} · ${euro(bon.totaal)} · controleren`
+        : `${datumNL(bon.datum) || "?"} · ${euro(bon.totaal)} · opgeslagen`;
     } catch (e) {
       taak.fout = true;
       taak.status = e.message || "Mislukt";
@@ -475,7 +480,7 @@
         '<div class="bon-bedrag"><div class="bon-totaal"></div><div class="bon-btw"></div></div>';
       knop.querySelector(".bon-naam").textContent = bon.etablissement || "(zonder naam)";
       knop.querySelector(".bon-sub").textContent =
-        [bon.datum || "geen datum", bon.plaats, bon.controleren ? "controleren" : ""].filter(Boolean).join(" · ");
+        [datumNL(bon.datum) || "geen datum", bon.plaats, bon.controleren ? "controleren" : ""].filter(Boolean).join(" · ");
       knop.querySelector(".bon-totaal").textContent = "€ " + euro(bon.totaal);
       knop.querySelector(".bon-btw").textContent = "btw € " + euro(bon.btw_totaal);
       knop.addEventListener("click", () => opendBon(bon.id));
